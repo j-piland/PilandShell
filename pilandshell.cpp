@@ -1,9 +1,13 @@
-#include<iostream>;
-#include<vector>;
-#include<string>;
-#include<chrono>;
-#include<algorithm>;
-#include<iterator>;
+#include<iostream>
+#include<vector>
+#include<string>
+#include<chrono>
+#include<algorithm>
+#include<iterator>
+#include<cstdlib>
+#include<unistd.h>
+#include<sys/types.h>
+#include<sys/wait.h>
 
 std::vector<char*> parseString(std::string toParse) {
 	std::vector<char*> toReturn;
@@ -17,9 +21,9 @@ std::vector<char*> parseString(std::string toParse) {
 
 	wordBegin = begin;
 
-	for (int c = begin; c < toParse.size(); c++) {
+	for (int c = begin; c < toParse.size()+1; c++) {
 		
-		if (toParse[c] == ' ' || c == toParse.size() - 1) {
+		if (toParse[c] == ' ' || c == toParse.size()) {
 			int wordCopyIterator = 0;
 			char* toPush = new char[128];
 			while (wordBegin < c) {
@@ -67,12 +71,12 @@ std::string selectHistory(std::vector<std::string> history, std::string cmd) {
 
 int main() {
 	std::vector<std::string> cmdStore;
-	bool exit = false;
+	bool exitbool = false;
 	std::vector<char*> cmdWords;
 	std::string cmd;
 	double lastTime = 0;
 
-	while (!exit) {
+	while (!exitbool) {
 		std::cout << "[cmd]: ";
 		std::getline(std::cin, cmd);
 
@@ -82,30 +86,50 @@ int main() {
 			cmd = selectHistory(cmdStore, cmd);
 		}
 		if (cmd == "whte_rbt.obj") {
-			std::cout << "Dennis Nedry pushed open the door marked FERTILIZATION, With the perimeter power out, all the security-card locks were disarmed. Every door in the building opened with a touch. The problems with the security system were high on Jurassic Park's bug list. Nedry wondered if anybody ever imagined that it wasn't a bug - tbat Nedry had programmed it that way.He had built in a classic trap door.Few programmers of large computer systems could resist the temptation to leave themselves a secret entrance.Partly it was common sense : if inept users locked up the system - and then called you for help - you always had a way to get in and repair the mess.And partly it was a kind of signature : Kilroy was here.";
+			std::cout << "Dennis Nedry pushed open the door marked FERTILIZATION, With the perimeter power out, all the security-card locks were disarmed. Every door in the building opened with a touch. The problems with the security system were high on Jurassic Park's bug list. Nedry wondered if anybody ever imagined that it wasn't a bug - tbat Nedry had programmed it that way.He had built in a classic trap door.Few programmers of large computer systems could resist the temptation to leave themselves a secret entrance.Partly it was common sense : if inept users locked up the system - and then called you for help - you always had a way to get in and repair the mess. And partly it was a kind of signature : Kilroy was here.";
 		}
 		else if (cmd == "ptime") {
 			parseTime(lastTime);
 			std::cout << "\n";
 		}
 		else if (cmd == "exit") {
-			exit=true;
+			exitbool=true;
 		}
 		else if (cmd == "history") {
 			displayHistory(cmdStore);
 		}
 		
 		else {
-			std::vector<char*> cmdPointers;
+			cmdWords = parseString(cmd);
+				
+			auto start = std::chrono::steady_clock::now();
+			
+			pid_t pid = fork();
+			
+			if(pid == 0){
+				std::vector<char*> argv;
+					
+				for(std::vector<char*>::iterator cIt = cmdWords.begin(); cIt != cmdWords.end(); ++cIt){
+					argv.push_back(&(*cIt)[0]);
+				}
 
-			cmdPointers = parseString(cmd);
-			for (int c = 0; c < cmdPointers.size()-1; c++) {
-				std::cout << *cmdPointers[c] << "\n";
+				execvp(cmdWords[0], &argv[0]);
+				perror("error");
+				exit(EXIT_FAILURE);
+
+			}else if(pid>0){
+				int *status;
+				wait(status);
+			}else{
+				std::cout << "fork failure";
 			}
+
+			auto end = std::chrono::steady_clock::now();
+			lastTime = std::chrono::duration <double, std::milli> (end-start).count();
+
 		}
 
 		
-
 		std::cout << "\n";
 	}
 }
